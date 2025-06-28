@@ -2,7 +2,7 @@
   "name": "email-verify",
   "version": "0.2.1",
   "description": "A tool to verify an email address exits via SMTP",
-  "main": "index.js",
+  "main": "server.js",
   "dependencies": {
     "bluebird": "^3.5.1",
     "mocha": "^4.0.1",
