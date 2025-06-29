@@ -30,8 +30,11 @@ app.post('/verify', async (req, res) => {
       }
 
       const banner = (result.banner || '').toLowerCase();
+      const flags = result.flags || [];
 
       const isCatchAll =
+        result.is_catch_all === true ||
+        flags.includes('catch-all') ||
         banner.includes('catch-all') ||
         banner.includes('accept-all') ||
         banner.includes('refused to verify') ||
