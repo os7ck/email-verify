@@ -8,6 +8,19 @@ const PORT = process.env.PORT; // ✅ Required by Railway – no fallback
 
 app.use(bodyParser.json());
 
+// ⏱ Timeout handler to prevent Make.com from freezing on long SMTP lookups
+app.use((req, res, next) => {
+  res.setTimeout(10000, () => {
+    res.status(200).json({
+      email: req.body.email || 'unknown',
+      status: 'retry_later',
+      reason: 'Request timed out after 10s',
+      raw: null,
+    });
+  });
+  next();
+});
+
 // Serve optional frontend (if needed)
 app.use(express.static(path.join(__dirname, 'public')));
 
