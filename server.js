@@ -30,26 +30,19 @@ app.post('/verify', async (req, res) => {
       }
 
       const banner = result.banner?.toLowerCase() || '';
-      const isCatchAll =
-        banner.includes('catch-all') ||
-        banner.includes('google') ||
-        banner.includes('outlook') ||
-        banner.includes('microsoft') ||
-        banner.includes('office');
+      const isCatchAll = banner.includes('catch-all');
 
       const risky = result.success && isCatchAll;
 
       let status;
       if (risky) {
         status = 'risky';
-      } else if (result.success) {
+      } else if (result.success === true) {
         status = 'valid';
-      } else if (result.code === 500 || result.tryagain) {
-        status = 'retry_later';
       } else if (result.success === false) {
         status = 'invalid';
       } else {
-        status = 'pending'; // fallback
+        status = 'retry_later';
       }
 
       res.status(200).json({
