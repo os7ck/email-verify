@@ -23,7 +23,7 @@ app.post('/verify', async (req, res) => {
       if (err || !result || typeof result !== 'object') {
         return res.status(200).json({
           email,
-          status: 'pending',
+          status: 'retry_later',
           reason: err?.message || 'Unknown error during SMTP handshake',
           raw: result || null,
         });
@@ -40,10 +40,17 @@ app.post('/verify', async (req, res) => {
       const risky = result.success && isCatchAll;
 
       let status;
-      if (risky) status = 'risky';
-      else if (result.success) status = 'valid';
-      else if (result.success === false) status = 'invalid';
-      else status = 'pending'; // fallback
+      if (risky) {
+        status = 'risky';
+      } else if (result.success) {
+        status = 'valid';
+      } else if (result.code === 500 || result.tryagain) {
+        status = 'retry_later';
+      } else if (result.success === false) {
+        status = 'invalid';
+      } else {
+        status = 'pending'; // fallback
+      }
 
       res.status(200).json({
         email,
@@ -55,7 +62,7 @@ app.post('/verify', async (req, res) => {
   } catch (err) {
     return res.status(200).json({
       email,
-      status: 'pending',
+      status: 'retry_later',
       reason: 'Unexpected error: ' + err.message,
       raw: null,
     });
