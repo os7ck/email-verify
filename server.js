@@ -4,7 +4,7 @@ const path = require('path');
 const { verify } = require('./index'); // your existing SMTP verify logic
 
 const app = express();
-const PORT = process.env.PORT || 8080;
+const PORT = process.env.PORT; // ✅ Required by Railway – no fallback
 
 app.use(bodyParser.json());
 
