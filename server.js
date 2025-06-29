@@ -1,16 +1,17 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const path = require('path');
-const { verify } = require('./index'); // uses the existing logic
+const { verify } = require('./index'); // uses your existing SMTP logic
 
 const app = express();
 const PORT = process.env.PORT || 8080;
 
 app.use(bodyParser.json());
 
-// ✅ Serve static files from the /public folder (for the frontend UI)
+// Serve static files (e.g., HTML/CSS) from /public
 app.use(express.static(path.join(__dirname, 'public')));
 
+// Main verify endpoint
 app.post('/verify', (req, res) => {
   const email = req.body.email;
   if (!email) return res.status(400).json({ error: 'Missing email' });
@@ -18,11 +19,12 @@ app.post('/verify', (req, res) => {
   verify(email, (err, result) => {
     if (err) return res.status(500).json({ error: err.message });
 
+    const banner = result.banner || '';
     const isCatchAll =
-      result.banner?.includes('Google') ||
-      result.banner?.includes('Outlook') ||
-      result.banner?.includes('Microsoft') ||
-      result.banner?.toLowerCase()?.includes('catch-all');
+      banner.includes('Google') ||
+      banner.includes('Outlook') ||
+      banner.includes('Microsoft') ||
+      banner.toLowerCase().includes('catch-all');
 
     const risky = result.success && isCatchAll;
 
@@ -37,8 +39,11 @@ app.post('/verify', (req, res) => {
   });
 });
 
+// Home route (frontend UI)
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-app.listen(PORT, () => console.log(`✅ Server live on port ${PORT}`));
+app.listen(PORT, () => {
+  console.log(`✅ Server live on port ${PORT}`);
+});
