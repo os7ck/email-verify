@@ -37,20 +37,22 @@ app.post('/verify', async (req, res) => {
         banner.includes('refused to verify') ||
         banner.includes('recipient address rejected') ||
         banner.includes('unable to verify') ||
-        banner.includes('smtp protocol error');
+        banner.includes('smtp protocol error') ||
+        banner.includes('verification not possible') ||
+        banner.includes('cannot verify');
 
-      const isValid = result.success === true && !isCatchAll;
-      const isRisky = result.success === true && isCatchAll;
       const isInvalid = result.success === false;
+      const isRisky = result.success === true && isCatchAll;
+      const isValid = result.success === true && !isCatchAll;
 
-      let status = 'retry_later'; // default fallback
+      let status = 'retry_later'; // default
 
-      if (isValid) {
-        status = 'valid';
+      if (isInvalid) {
+        status = 'invalid';
       } else if (isRisky) {
         status = 'risky';
-      } else if (isInvalid) {
-        status = 'invalid';
+      } else if (isValid) {
+        status = 'valid';
       }
 
       res.status(200).json({
