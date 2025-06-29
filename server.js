@@ -14,18 +14,37 @@ app.post('/verify', (req, res) => {
   verify(email, (err, result) => {
     if (err) return res.status(500).json({ error: err.message });
 
-    // Optional: mark certain banners (e.g., Google, Outlook) as "risky"
+    const banner = result.banner || '';
     const isCatchAll =
-      result.banner?.includes('Google') ||
-      result.banner?.includes('Outlook') ||
-      result.banner?.includes('Microsoft') ||
-      result.banner?.toLowerCase()?.includes('catch-all');
+      banner.includes('Google') ||
+      banner.includes('Outlook') ||
+      banner.includes('Microsoft') ||
+      banner.toLowerCase().includes('catch-all');
 
     const risky = result.success && isCatchAll;
 
+    let reason = result.info || 'Unknown';
+    let deliverable = result.success === true;
+    let valid = true;
+
+    if (reason.includes('Invalid Email Structure')) valid = false;
+    if (
+      reason.includes('Domain not found') ||
+      reason.includes('No MX Records') ||
+      reason.includes('SMTP connection error')
+    ) {
+      deliverable = false;
+      risky = true;
+    }
+    if (reason.includes('Connection Timed Out')) risky = true;
+
     res.json({
-      ...result,
+      email: result.addr,
+      valid,
+      deliverable,
       risky,
+      reason,
+      raw: result,
     });
   });
 });
