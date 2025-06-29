@@ -29,8 +29,15 @@ app.post('/verify', async (req, res) => {
         });
       }
 
-      const banner = result.banner?.toLowerCase() || '';
-      const isCatchAll = banner.includes('catch-all');
+      const banner = (result.banner || '').toLowerCase();
+
+      const isCatchAll =
+        banner.includes('catch-all') ||
+        banner.includes('accept-all') ||
+        banner.includes('refused to verify') ||
+        banner.includes('recipient address rejected') ||
+        banner.includes('unable to verify') ||
+        banner.includes('smtp protocol error');
 
       const risky = result.success && isCatchAll;
 
