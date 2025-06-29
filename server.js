@@ -1,7 +1,7 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const path = require('path');
-const { verify } = require('./index'); // your existing SMTP verify logic
+const { verify } = require('./index'); // Your SMTP verify logic
 
 const app = express();
 const PORT = process.env.PORT; // ✅ Required by Railway – no fallback
@@ -11,32 +11,55 @@ app.use(bodyParser.json());
 // Serve optional frontend (if needed)
 app.use(express.static(path.join(__dirname, 'public')));
 
-app.post('/verify', (req, res) => {
+app.post('/verify', async (req, res) => {
   const email = req.body.email;
+
   if (!email) {
     return res.status(400).json({ error: 'Missing email in request body' });
   }
 
-  verify(email, (err, result) => {
-    if (err) {
-      return res.status(500).json({ error: err.message });
-    }
+  try {
+    verify(email, (err, result) => {
+      if (err || !result || typeof result !== 'object') {
+        return res.status(200).json({
+          email,
+          status: 'pending',
+          reason: err?.message || 'Unknown error during SMTP handshake',
+          raw: result || null,
+        });
+      }
 
-    const isCatchAll =
-      result.banner?.includes('Google') ||
-      result.banner?.includes('Outlook') ||
-      result.banner?.includes('Microsoft') ||
-      result.banner?.toLowerCase()?.includes('catch-all');
+      const banner = result.banner?.toLowerCase() || '';
+      const isCatchAll =
+        banner.includes('catch-all') ||
+        banner.includes('google') ||
+        banner.includes('outlook') ||
+        banner.includes('microsoft') ||
+        banner.includes('office');
 
-    const risky = result.success && isCatchAll;
+      const risky = result.success && isCatchAll;
 
-    res.json({
-      email,
-      status: risky ? "risky" : result.success ? "valid" : "invalid",
-      reason: result.info || '',
-      raw: result || {}
+      let status;
+      if (risky) status = 'risky';
+      else if (result.success) status = 'valid';
+      else if (result.success === false) status = 'invalid';
+      else status = 'pending'; // fallback
+
+      res.status(200).json({
+        email,
+        status,
+        reason: result.info || '',
+        raw: result,
+      });
     });
-  });
+  } catch (err) {
+    return res.status(200).json({
+      email,
+      status: 'pending',
+      reason: 'Unexpected error: ' + err.message,
+      raw: null,
+    });
+  }
 });
 
 app.get('/', (req, res) => {
