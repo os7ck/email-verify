@@ -1,11 +1,15 @@
 const express = require('express');
 const bodyParser = require('body-parser');
+const path = require('path');
 const { verify } = require('./index'); // uses the existing logic
 
 const app = express();
 const PORT = process.env.PORT || 8080;
 
 app.use(bodyParser.json());
+
+// ✅ Serve static files from the /public folder (for the frontend UI)
+app.use(express.static(path.join(__dirname, 'public')));
 
 app.post('/verify', (req, res) => {
   const email = req.body.email;
@@ -14,42 +18,27 @@ app.post('/verify', (req, res) => {
   verify(email, (err, result) => {
     if (err) return res.status(500).json({ error: err.message });
 
-    const banner = result.banner || '';
     const isCatchAll =
-      banner.includes('Google') ||
-      banner.includes('Outlook') ||
-      banner.includes('Microsoft') ||
-      banner.toLowerCase().includes('catch-all');
+      result.banner?.includes('Google') ||
+      result.banner?.includes('Outlook') ||
+      result.banner?.includes('Microsoft') ||
+      result.banner?.toLowerCase()?.includes('catch-all');
 
     const risky = result.success && isCatchAll;
 
-    let reason = result.info || 'Unknown';
-    let deliverable = result.success === true;
-    let valid = true;
-
-    if (reason.includes('Invalid Email Structure')) valid = false;
-    if (
-      reason.includes('Domain not found') ||
-      reason.includes('No MX Records') ||
-      reason.includes('SMTP connection error')
-    ) {
-      deliverable = false;
-    }
-    if (reason.includes('Connection Timed Out')) deliverable = false;
-
     res.json({
-      email: result.addr,
-      valid,
-      deliverable,
+      email,
+      valid: result.success,
+      deliverable: result.success,
       risky,
-      reason,
-      raw: result
+      reason: result.info,
+      raw: result,
     });
   });
 });
 
 app.get('/', (req, res) => {
-  res.send('Email Verifier is live ✅');
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-app.listen(PORT, () => console.log(`Server live on port ${PORT}`));
+app.listen(PORT, () => console.log(`✅ Server live on port ${PORT}`));
