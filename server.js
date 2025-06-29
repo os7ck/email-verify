@@ -34,9 +34,8 @@ app.post('/verify', (req, res) => {
       reason.includes('SMTP connection error')
     ) {
       deliverable = false;
-      risky = true;
     }
-    if (reason.includes('Connection Timed Out')) risky = true;
+    if (reason.includes('Connection Timed Out')) deliverable = false;
 
     res.json({
       email: result.addr,
@@ -44,7 +43,7 @@ app.post('/verify', (req, res) => {
       deliverable,
       risky,
       reason,
-      raw: result,
+      raw: result
     });
   });
 });
