@@ -32,11 +32,9 @@ app.post('/verify', (req, res) => {
 
     res.json({
       email,
-      valid: result.success || false,
-      deliverable: result.success || false,
-      risky,
+      status: risky ? "risky" : result.success ? "valid" : "invalid",
       reason: result.info || '',
-      raw: result || {},
+      raw: result || {}
     });
   });
 });
