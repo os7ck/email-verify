@@ -13,7 +13,20 @@ app.post('/verify', (req, res) => {
 
   verify(email, (err, result) => {
     if (err) return res.status(500).json({ error: err.message });
-    res.json(result);
+
+    // Optional: mark certain banners (e.g., Google, Outlook) as "risky"
+    const isCatchAll =
+      result.banner?.includes('Google') ||
+      result.banner?.includes('Outlook') ||
+      result.banner?.includes('Microsoft') ||
+      result.banner?.toLowerCase()?.includes('catch-all');
+
+    const risky = result.success && isCatchAll;
+
+    res.json({
+      ...result,
+      risky,
+    });
   });
 });
 
